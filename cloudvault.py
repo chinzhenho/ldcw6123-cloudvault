@@ -435,7 +435,8 @@ def main():
         elif choice == "6":
             storage_breakdown()
         else:
-            print("  This function is coming soon.")
+            print("Thank you for using CloudVault. Goodbye!")
+            break
         pause()
 
 

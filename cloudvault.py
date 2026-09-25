@@ -138,6 +138,27 @@ def get_storage_status(percent):
         return "[NORMAL]"
 
 
+def get_status_colour(percent):
+    """Return green, yellow or red depending on the storage status."""
+    if percent >= CRITICAL_PERCENT:
+        return RED
+    elif percent >= WARNING_PERCENT:
+        return YELLOW
+    else:
+        return GREEN
+
+
+def draw_bar_only(percent, colour=GREEN, width=30):
+    """Return a coloured progress bar, e.g. ██████░░░░."""
+    filled = int(round(percent / 100 * width))
+    return colour + "█" * filled + GREY + "░" * (width - filled) + RESET
+
+
+def draw_bar(percent, colour=GREEN, width=30):
+    """Return a coloured progress bar with the percentage, e.g. ██████░░░░ 12.0%."""
+    return f"{draw_bar_only(percent, colour, width)} {percent:5.1f}%"
+
+
 def find_file(file_name):
     """Return the file with this exact name (case-insensitive), or None."""
     for file in cloud_files:
@@ -317,6 +338,28 @@ def search_files():
         print_file_table(results)
 
 
+def view_files():
+    print("\n=== ALL FILES ===")
+    if len(cloud_files) == 0:
+        print("  CloudVault is empty.")
+        return
+    print_file_table(cloud_files)
+    print(f"\n  Total: {len(cloud_files)} file(s), {get_used_storage()} MB")
+
+
+def storage_monitor():
+    print("\n=== STORAGE MONITOR ===")
+    used = get_used_storage()
+    percent = get_usage_percent()
+    print(f"  Capacity  : {STORAGE_CAPACITY_MB} MB")
+    print(f"  Used      : {used} MB")
+    print(f"  Available : {STORAGE_CAPACITY_MB - used} MB")
+    print(f"  Usage     : {draw_bar(percent, get_status_colour(percent))}")
+    print(f"  Status    : {get_storage_status(percent)}")
+    print("\n  Status guide: 0-69% Normal | 70-89% Warning | 90-100% Critical")
+    check_storage_warning()
+
+
 # ---------------------------------------------------------------------------
 # Dashboard (main menu)
 # ---------------------------------------------------------------------------
@@ -356,6 +399,10 @@ def main():
             delete_file()
         elif choice == "3":
             search_files()
+        elif choice == "4":
+            view_files()
+        elif choice == "5":
+            storage_monitor()
         else:
             print("  This function is coming soon.")
         pause()

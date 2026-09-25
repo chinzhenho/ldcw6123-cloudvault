@@ -360,6 +360,35 @@ def storage_monitor():
     check_storage_warning()
 
 
+def storage_breakdown():
+    print("\n=== STORAGE BREAKDOWN ===")
+    print("  Category % = share of the storage currently used")
+    print(f"  Total %    = storage used out of the {STORAGE_CAPACITY_MB} MB capacity")
+    print(f"  Colour     = {GREEN}Green{RESET} 0-69%  |  "
+          f"{YELLOW}Yellow{RESET} 70-89%  |  {RED}Red{RESET} 90-100%\n")
+
+    # Bar colour depends on usage: green (<70%), yellow (70-89%), red (90%+)
+    bar_width = 30
+    line = "  +" + "-" * 12 + "+" + "-" * 9 + "+" + "-" * (bar_width + 2) + "+" + "-" * 9 + "+"
+
+    print(line)
+    print(f"  | {'Category':<10} | {'Size':>7} | {'Usage':<{bar_width}} | {'Percent':>7} |")
+    print(line)
+    for category in CATEGORIES:
+        category_size = sum(file["size"] for file in cloud_files
+                            if file["category"] == category)
+        used = get_used_storage()
+        percent = category_size / used * 100 if used > 0 else 0
+        bar = draw_bar_only(percent, get_status_colour(percent), bar_width)
+        print(f"  | {category:<10} | {category_size:>4} MB | {bar} | {percent:>6.1f}% |")
+        print(line)
+
+    total_percent = get_usage_percent()
+    total_bar = draw_bar_only(total_percent, get_status_colour(total_percent), bar_width)
+    print(f"  | {'Total':<10} | {get_used_storage():>4} MB | {total_bar} | {total_percent:>6.1f}% |")
+    print(line)
+
+
 # ---------------------------------------------------------------------------
 # Dashboard (main menu)
 # ---------------------------------------------------------------------------
@@ -403,6 +432,8 @@ def main():
             view_files()
         elif choice == "5":
             storage_monitor()
+        elif choice == "6":
+            storage_breakdown()
         else:
             print("  This function is coming soon.")
         pause()

@@ -267,6 +267,56 @@ def upload_file():
     check_storage_warning()
 
 
+def delete_file():
+    print("\n=== DELETE FILE ===")
+    if len(cloud_files) == 0:
+        print("  CloudVault is empty. Nothing to delete.")
+        return
+
+    print_file_table(cloud_files)
+    print("\nEnter 0 to cancel.")
+
+    # Ask until the user picks a file number that exists
+    while True:
+        number = ask_whole_number("Enter the No. of the file to delete: ")
+        if number == 0:
+            print("  Delete cancelled.")
+            return
+        if 1 <= number <= len(cloud_files):
+            break
+        print(f"  No such file. Enter a number from 1 to {len(cloud_files)}.")
+
+    file = cloud_files[number - 1]
+    if ask_yes_no(f"Delete '{file['name']}' ({file['size']} MB)? (y/n): "):
+        cloud_files.remove(file)
+        print(f"  Deleted '{file['name']}'. Freed {file['size']} MB.")
+        print(f"  Storage used: {get_used_storage()} / {STORAGE_CAPACITY_MB} MB")
+        check_storage_warning()
+    else:
+        print("  Delete cancelled.")
+
+
+def search_files():
+    print("\n=== SEARCH FILES ===")
+    # Accept a keyword (letters and numbers) or a full file name (e.g. holiday.jpg)
+    while True:
+        keyword = input("Enter file name or keyword (e.g. holiday, holiday.jpg, videos): ").strip()
+        if ALNUM_PATTERN.match(keyword) or FILE_NAME_PATTERN.match(keyword):
+            keyword = keyword.lower()
+            break
+        print("  Invalid input. Use letters and numbers only (a file name may "
+              "include one dot, e.g. holiday.jpg). Please try again.")
+
+    results = [file for file in cloud_files
+               if keyword in file["name"].lower() or keyword == file["category"].lower()]
+
+    if len(results) == 0:
+        print(f"  No files found matching '{keyword}'.")
+    else:
+        print(f"  Found {len(results)} file(s):\n")
+        print_file_table(results)
+
+
 # ---------------------------------------------------------------------------
 # Dashboard (main menu)
 # ---------------------------------------------------------------------------
@@ -302,6 +352,10 @@ def main():
 
         if choice == "1":
             upload_file()
+        elif choice == "2":
+            delete_file()
+        elif choice == "3":
+            search_files()
         else:
             print("  This function is coming soon.")
         pause()

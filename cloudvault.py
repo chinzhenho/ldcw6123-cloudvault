@@ -155,6 +155,119 @@ def print_file_table(files):
 
 
 # ---------------------------------------------------------------------------
+# Storage warning
+# ---------------------------------------------------------------------------
+def check_storage_warning():
+    """Warn the user when storage reaches 70% or 90%."""
+    percent = get_usage_percent()
+    if percent >= CRITICAL_PERCENT:
+        print(f"\n  {RED}!!! CRITICAL: Storage is {percent:.1f}% full. "
+              f"Delete files to free up space.{RESET}")
+    elif percent >= WARNING_PERCENT:
+        print(f"\n  {YELLOW}!   WARNING: Storage is {percent:.1f}% full. "
+              f"You are running low on space.{RESET}")
+
+
+# ---------------------------------------------------------------------------
+# Main functions
+# ---------------------------------------------------------------------------
+def ask_category():
+    """Step 1: ask the user to choose a category. Returns None if cancelled."""
+    print("\nStep 1 of 3: Choose a category")
+    print("  1. Documents  (.pdf, .docx, .txt)")
+    print("  2. Images     (.jpg, .png)")
+    print("  3. Videos     (.mp4, .mov)")
+    print("  4. Other      (.zip or any other file type)")
+    print("  0. Cancel")
+    while True:
+        choice = ask_alnum("Enter category number (0-4): ")
+        if choice in ("1", "2", "3", "4"):
+            return CATEGORIES[int(choice) - 1]
+        if choice == "0":
+            return None
+        print("  Invalid choice. Enter a number from 0 to 4. Please try again.")
+
+
+def ask_upload_name(category):
+    """Step 2: ask for a new file name that matches the category. Returns None if cancelled."""
+    if category == "Other":
+        allowed_text = ".zip or any type not listed in the other categories"
+        example = "backup.zip"
+    else:
+        allowed_text = ", ".join("." + ext for ext in CATEGORY_EXTENSIONS[category])
+        example = "myfile." + CATEGORY_EXTENSIONS[category][0]
+
+    print("\nStep 2 of 3: Enter the file name")
+    print("  - Use letters and numbers only, then a dot and the file type")
+    print(f"  - Maximum {MAX_NAME_LENGTH} characters")
+    print(f"  - Allowed file types for {category}: {allowed_text}")
+    print(f"  - Example: {example}")
+    print("  - Enter 0 to cancel")
+
+    while True:
+        file_name = ask_file_name("File name: ")
+        if file_name == "0":
+            return None
+        if get_category(file_name) != category:
+            extension = file_name.rsplit(".", 1)[1].lower()
+            print(f"  '.{extension}' is not allowed for {category}. "
+                  f"Allowed: {allowed_text}. Please try again.")
+        elif find_file(file_name) is not None:
+            print(f"  '{file_name}' already exists in CloudVault. "
+                  "Please enter a different name.")
+        else:
+            return file_name
+
+
+def ask_upload_size():
+    """Step 3: ask for a size that fits in the available storage. Returns None if cancelled."""
+    available = STORAGE_CAPACITY_MB - get_used_storage()
+    print("\nStep 3 of 3: Enter the file size")
+    print("  - Whole number in MB, e.g. 25")
+    print(f"  - Available storage: {available} MB")
+    print("  - Enter 0 to cancel")
+
+    while True:
+        size = ask_whole_number("File size (MB): ")
+        if size == 0:
+            return None
+        if size <= available:
+            return size
+        print(f"  Not enough storage. The file must be {available} MB or less. "
+              "Please try again.")
+
+
+def upload_file():
+    print("\n=== UPLOAD FILE ===")
+    if get_used_storage() >= STORAGE_CAPACITY_MB:
+        print("  Storage is full. Delete some files before uploading.")
+        return
+
+    category = ask_category()
+    if category is None:
+        print("  Upload cancelled.")
+        return
+
+    file_name = ask_upload_name(category)
+    if file_name is None:
+        print("  Upload cancelled.")
+        return
+
+    size = ask_upload_size()
+    if size is None:
+        print("  Upload cancelled.")
+        return
+
+    cloud_files.append({"name": file_name, "size": size, "category": category})
+    print("\n  Upload successful!")
+    print(f"  File     : {file_name}")
+    print(f"  Category : {category}")
+    print(f"  Size     : {size} MB")
+    print(f"  Storage used: {get_used_storage()} / {STORAGE_CAPACITY_MB} MB")
+    check_storage_warning()
+
+
+# ---------------------------------------------------------------------------
 # Dashboard (main menu)
 # ---------------------------------------------------------------------------
 def show_dashboard():
@@ -187,7 +300,10 @@ def main():
                 break
             print("  Invalid choice. Enter a number from 0 to 6. Please try again.")
 
-        print("  This function is coming soon.")
+        if choice == "1":
+            upload_file()
+        else:
+            print("  This function is coming soon.")
         pause()
 
 
